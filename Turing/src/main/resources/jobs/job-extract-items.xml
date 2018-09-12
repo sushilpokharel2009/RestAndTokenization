@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch 
+		http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/util 
+		http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		">
+
+	<import resource="../config/context.xml" />
+	<import resource="../config/database.xml" />
+
+	<bean id="itemReader" class="com.uvk.readwrite.DatabaseItemReader"
+		scope="step">
+	</bean>
+	
+	<bean id="itemWriter" class="com.uvk.readwrite.DatabaseItemWriter"
+		scope="step">
+	</bean>
+
+	<!-- csv file writer -->
+	<bean id="flatFileItemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter">
+		<property name="resource" value="file:csv/vendor.csv" />
+		<!-- <property name="resource" value="file:csv/vendors.csv" /> -->
+
+		<property name="appendAllowed" value="true" />
+		<property name="lineAggregator">
+			<bean
+				class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">
+				<property name="delimiter" value="," />
+				<property name="fieldExtractor">
+					<bean
+						class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor">
+						<property name="names"
+							value="id, accountNumber, routingNumber, tableName" />
+					</bean>
+				</property>
+			</bean>
+		</property>
+	</bean>
+
+	<job id="testJob" xmlns="http://www.springframework.org/schema/batch">
+		<step id="step1">
+			<tasklet task-executor="simpleTaskExecutor" throttle-limit="20">
+				<chunk reader="itemReader" writer="itemWriter"
+					commit-interval="1" />
+			</tasklet>
+		</step>
+	</job>
+
+	<bean id="simpleTaskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
+		<property name="concurrencyLimit" value="1" />
+	</bean>
+
+</beans>
+	
